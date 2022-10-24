@@ -1,40 +1,26 @@
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
-
-
-# Create your models here.
-class Profile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-    )
-    website = models.URLField(blank=True)
-    bio = models.CharField(max_length=240, blank=True)
-
-    def __str__(self):
-        return self.user.get_username()
-
-
-class Tag(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-
-    def __str__(self):
-        return self.name
+from django.utils import timezone
 
 
 class Post(models.Model):
-    class Meta:
-        ordering = ["-publish_date"]
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    )
 
-    title = models.CharField(max_length=255, unique=True)
-    subtitle = models.CharField(max_length=255, blank=True)
-    slug = models.SlugField(max_length=255, unique=True)
+    title = models.CharField(max_length=250)
+    slug = models.SlugField(max_length=250, unique_for_date = 'publish')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blog_posts')
     body = models.TextField()
-    meta_description = models.CharField(max_length=150, blank=True)
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_modified = models.DateTimeField(auto_now=True)
-    publish_date = models.DateTimeField(blank=True, null=True)
-    published = models.BooleanField(default=False)
+    publish = models.DateTimeField(default=timezone.now)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=10,choices = STATUS_CHOICES, default='draft')
 
-    author = models.ForeignKey(Profile, on_delete=models.PROTECT)
-    tags = models.ManyToManyField(Tag, blank=True)
+    class Meta:
+        ordering = ('-publish',)
+
+    def __str__(self):
+        return self.title
